@@ -104,10 +104,11 @@ class LLFFDataset(DatasetBase):
 
         self.ndc_coeffs = (2 * self.intrins_full.fx / self.w_full,
                            2 * self.intrins_full.fy / self.h_full)
-        # if self.split == "train":
-        #     self.gen_rays(factor=factor)
-        # else:
-        #     # Rays are not needed for testing
+        if self.split == "train":
+            self.gen_rays(factor=factor)
+        else:
+            # Rays are not needed for testing
+            pass
         self.h, self.w = self.h_full, self.w_full
         self.intrins = self.intrins_full
         self.should_use_background = False  # Give warning
@@ -127,7 +128,7 @@ class LLFFDataset(DatasetBase):
             c2w = np.concatenate([R, t], axis=1)
             c2w = np.concatenate([c2w, bottom], axis=0)
             #  c2w = global_w2rc @ c2w
-            all_c2w.append(np.expand_dims(c2w.astype(np.float32),0))
+            all_c2w.append(torch.from_numpy(np.expand_dims(c2w.astype(np.float32),0)))
 
             if 'path' in self.imgs[idx]:
                 img_path = self.imgs[idx]["path"]
@@ -150,6 +151,7 @@ class LLFFDataset(DatasetBase):
                 all_gt.append(np.expand_dims(img,0))
 
         self.gt = np.concatenate(all_gt, axis=0) / 255.0
+        self.gt = torch.from_numpy(self.gt.astype("f"))
 
         if self.gt.shape[-1] == 4:
             # Apply alpha channel
@@ -169,7 +171,7 @@ class LLFFDataset(DatasetBase):
                 t = self.sfm.render_poses[idx]["center"].astype(np.float64)
                 c2w = np.concatenate([R, t], axis=1)
                 c2w = np.concatenate([c2w, bottom], axis=0)
-                render_c2w.append(np.expand_dims(c2w.astype(np.float32), axis=0))
+                render_c2w.append(torch.from_numpy(np.expand_dims(c2w.astype(np.float32), axis=0)))
             self.render_c2w = np.concatenate(render_c2w)
             if bds_scale != 1.0:
                 self.render_c2w[:, :3, 3] *= bds_scale
@@ -189,6 +191,7 @@ class LLFFDataset(DatasetBase):
         if self.verbose:
             print('scene_radius', self.scene_radius)
         self.use_sphere_bound = False
+        self.c2w = torch.from_numpy(self.c2w)
 
     def gen_rays(self, factor=1):
         super().gen_rays(factor)

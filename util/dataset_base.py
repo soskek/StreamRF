@@ -29,7 +29,8 @@ class DatasetBase:
         Shuffle all rays
         """
         if self.split == "train":
-            del self.rays
+            if hasattr(self, "rays"):
+                del self.rays
             self.rays = select_or_shuffle_rays(self.rays_init, self.permutation,
                                                self.epoch_size, self.device)
 
